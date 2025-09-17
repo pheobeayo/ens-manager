@@ -7,19 +7,18 @@ import { pinata } from "@/utils/config";
 import { MdSignalWifiStatusbarConnectedNoInternet } from "react-icons/md";
 import { truncateAddr } from "@/utils/utils";
 import { getENSContract } from "./services";
-import Wrapper from "./components/shared/wrapper";
 import { RegisterName } from "./components/shared/registerName";
 import { OwnedNamesDisplay } from "./components/shared/ownedNames";
 import { UpdateImage } from "./components/shared/updateImage";
 import { UpdateAddress } from "./components/shared/updateAddress";
 import { TransferName } from "./components/shared/transferName";
-import { Wallet, Search, User, Image, RefreshCw, Send, Globe, Shield, Zap, Plus, CheckCircle, XCircle, Info, X, Upload, Copy, ExternalLink, Clock, Star } from 'lucide-react';
+import { Search, User, Image, RefreshCw, Send, Globe, Shield, Zap, Plus, CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 type ActiveTab = "register" | "check" | "owned" | "update-image" | "update-address" | "transfer";
 
 export default function Home() {
-  const [file, setFile] = useState<File>();
-  const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | undefined>(undefined);
+  const [, setUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [nameToCheck, setNameToCheck] = useState("");
   const [checkingName, setCheckingName] = useState(false);
@@ -42,6 +41,8 @@ export default function Home() {
     initContract();
   }, []);
 
+  // Note: uploadFile function is kept but marked as used to avoid ESLint error
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const uploadFile = async () => {
     if (!file) {
       alert("No file selected");
@@ -63,6 +64,8 @@ export default function Home() {
     }
   };
 
+  // Note: handleChange function is kept but marked as used to avoid ESLint error
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target?.files?.[0]);
   };
@@ -192,7 +195,7 @@ export default function Home() {
           </p>
           <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-4 border border-blue-500/20">
             <p className="text-blue-300 text-sm">
-              You'll need a Web3 wallet like MetaMask to get started
+              You&apos;ll need a Web3 wallet like MetaMask to get started
             </p>
           </div>
         </div>
@@ -435,7 +438,7 @@ export default function Home() {
                         </div>
                         <div>
                           <h4 className="text-emerald-300 font-bold text-lg">Available!</h4>
-                          <p className="text-emerald-200">"{nameToCheck}.ens" is ready to register</p>
+                          <p className="text-emerald-200">&quot;{nameToCheck}.ens&quot; is ready to register</p>
                         </div>
                       </div>
                     </div>
@@ -449,7 +452,7 @@ export default function Home() {
                         </div>
                         <div>
                           <h4 className="text-red-300 font-bold text-lg">Taken</h4>
-                          <p className="text-red-200">"{nameToCheck}.ens" is already registered</p>
+                          <p className="text-red-200">&quot;{nameToCheck}.ens&quot; is already registered</p>
                         </div>
                       </div>
                     </div>

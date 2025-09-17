@@ -111,19 +111,23 @@ export const TransferName: React.FC<TransferNameProps> = ({
       setIsOwner(null);
       setNameExists(null);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Transfer error:', error);
       setTransferring(false);
       
-      // Handle different error types
-      if (error.code === 4001) {
+      // Handle different error types with proper type checking
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
         onError?.('Transaction rejected by user');
-      } else if (error.message?.includes('Not the owner')) {
-        onError?.('You are not the owner of this name');
-      } else if (error.message?.includes('Name does not exist')) {
-        onError?.('Name does not exist');
-      } else if (error.message?.includes('insufficient funds')) {
-        onError?.('Insufficient funds for transaction');
+      } else if (error instanceof Error) {
+        if (error.message.includes('Not the owner')) {
+          onError?.('You are not the owner of this name');
+        } else if (error.message.includes('Name does not exist')) {
+          onError?.('Name does not exist');
+        } else if (error.message.includes('insufficient funds')) {
+          onError?.('Insufficient funds for transaction');
+        } else {
+          onError?.(`Transfer failed: ${error.message}`);
+        }
       } else {
         onError?.('Transfer failed. Please try again.');
       }
@@ -206,7 +210,7 @@ export const TransferName: React.FC<TransferNameProps> = ({
             <div className="text-yellow-200">
               <p className="font-medium mb-1">Transfer Warning</p>
               <p className="text-sm">
-                This action will permanently transfer ownership of "{name}" to the specified address. 
+                This action will permanently transfer ownership of &quot;{name}&quot; to the specified address. 
                 You will no longer be able to manage this name after the transfer is complete.
               </p>
             </div>

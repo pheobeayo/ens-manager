@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Contract } from 'ethers';
+import Image from 'next/image';
 import { pinata } from '@/utils/config';
 
 interface RegisterNameProps {
@@ -128,17 +129,21 @@ export const RegisterName: React.FC<RegisterNameProps> = ({
       setImageHash('');
       setNameAvailable(null);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
       setRegistering(false);
       
-      // Handle different error types
-      if (error.code === 4001) {
+      // Handle different error types with proper type checking
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
         onError?.('Transaction rejected by user');
-      } else if (error.message?.includes('Name already registered')) {
-        onError?.('Name is already registered');
-      } else if (error.message?.includes('insufficient funds')) {
-        onError?.('Insufficient funds for transaction');
+      } else if (error instanceof Error) {
+        if (error.message.includes('Name already registered')) {
+          onError?.('Name is already registered');
+        } else if (error.message.includes('insufficient funds')) {
+          onError?.('Insufficient funds for transaction');
+        } else {
+          onError?.(`Registration failed: ${error.message}`);
+        }
       } else {
         onError?.('Registration failed. Please try again.');
       }
@@ -231,11 +236,15 @@ export const RegisterName: React.FC<RegisterNameProps> = ({
         {imageUrl && (
           <div className="mt-2">
             <p className="text-green-500 text-sm mb-2">✓ Image uploaded successfully</p>
-            <img
-              src={imageUrl}
-              alt="Uploaded preview"
-              className="w-32 h-32 object-cover rounded-lg border border-gray-700"
-            />
+            <div className="relative w-32 h-32 rounded-lg border border-gray-700 overflow-hidden">
+              <Image
+                src={imageUrl}
+                alt="Uploaded preview"
+                fill
+                className="object-cover"
+                sizes="128px"
+              />
+            </div>
           </div>
         )}
       </div>

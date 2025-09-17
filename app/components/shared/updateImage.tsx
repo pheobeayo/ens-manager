@@ -17,7 +17,7 @@ export const UpdateImage: React.FC<UpdateImageProps> = ({
 }) => {
   // Form states
   const [selectedName, setSelectedName] = useState('');
-  const [file, setFile] = useState<File>();
+  const [file, setFile] = useState<File | undefined>(undefined);
   const [imageUrl, setImageUrl] = useState('');
   
   // Loading states
@@ -48,7 +48,7 @@ export const UpdateImage: React.FC<UpdateImageProps> = ({
     };
 
     loadOwnedNames();
-  }, [contract, userAddress]);
+  }, [contract, userAddress, onError]);
 
   // Load current image when name is selected
   useEffect(() => {
@@ -147,19 +147,24 @@ export const UpdateImage: React.FC<UpdateImageProps> = ({
       const fileUrl = await pinata.gateways.public.convert(imageHash);
       setCurrentImageUrl(fileUrl);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Update error:', error);
       setUpdating(false);
       
-      // Handle different error types
-      if (error.code === 4001) {
+      // Handle different error types with proper type checking
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
         onError?.('Transaction rejected by user');
-      } else if (error.message?.includes('Not the owner')) {
-        onError?.('You are not the owner of this name');
-      } else if (error.message?.includes('Name does not exist')) {
-        onError?.('This name does not exist');
-      } else if (error.message?.includes('insufficient funds')) {
-        onError?.('Insufficient funds for transaction');
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        const message = String(error.message);
+        if (message.includes('Not the owner')) {
+          onError?.('You are not the owner of this name');
+        } else if (message.includes('Name does not exist')) {
+          onError?.('This name does not exist');
+        } else if (message.includes('insufficient funds')) {
+          onError?.('Insufficient funds for transaction');
+        } else {
+          onError?.('Update failed. Please try again.');
+        }
       } else {
         onError?.('Update failed. Please try again.');
       }
@@ -203,7 +208,7 @@ export const UpdateImage: React.FC<UpdateImageProps> = ({
           </select>
         ) : (
           <div className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-400">
-            You don't own any names yet.
+            You don&apos;t own any names yet.
           </div>
         )}
       </div>

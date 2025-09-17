@@ -17,32 +17,36 @@ export async function ensureEthereumAvailable(): Promise<void> {
       );
     }
   
-    if (typeof ethereumProvider.request !== "function") {
+    // Type guard to check if the provider has a request method
+    if (!ethereumProvider || typeof ethereumProvider !== 'object' || !('request' in ethereumProvider) || typeof ethereumProvider.request !== "function") {
       throw new Error(
         "Ethereum provider does not support 'request' method. Ensure MetaMask is up to date."
       );
     }
 }
 
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+}
 
 export async function getSigner(): Promise<ethers.Signer> {
     await ensureEthereumAvailable();
   
     try {
-      const accounts: string[] = await ethereumProvider.request({
+      const provider = ethereumProvider as EthereumProvider;
+      const accounts = await provider.request({
         method: "eth_accounts",
-      });
+      }) as string[];
   
       if (accounts?.length > 0) {
-        const provider: ethers.BrowserProvider = new ethers.BrowserProvider(
-          ethereumProvider
+        const ethProvider = new ethers.BrowserProvider(
+          ethereumProvider as ethers.Eip1193Provider
         );
   
-        return provider.getSigner();
+        return ethProvider.getSigner();
       } else {
-        const fallbackProvider: ethers.JsonRpcProvider =
-          new ethers.JsonRpcProvider(rpcUrl);
-        const randomWallet: ethers.HDNodeWallet = ethers.Wallet.createRandom();
+        const fallbackProvider = new ethers.JsonRpcProvider(rpcUrl);
+        const randomWallet = ethers.Wallet.createRandom();
   
         return randomWallet.connect(fallbackProvider);
       }
@@ -56,7 +60,7 @@ export async function getENSContract(): Promise<Contract> {
     await ensureEthereumAvailable();
   
     try {
-      const signer: ethers.Signer = await getSigner();
+      const signer = await getSigner();
   
       return new ethers.Contract(
         ENSContract.contractAddr,
@@ -67,5 +71,4 @@ export async function getENSContract(): Promise<Contract> {
       console.error("Error initializing contract:", error);
       throw new Error("Failed to initialize the ENS contract.");
     }
-  }
-  
+}

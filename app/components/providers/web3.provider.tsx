@@ -1,5 +1,4 @@
 "use client"
-
 import { WagmiProvider } from "wagmi";
 import type { PropsWithChildren } from "react";
 import { ConnectKitProvider } from "connectkit";
@@ -10,7 +9,7 @@ if (!projectId) throw new Error("NEXT_WALLETCONNECT_PROJECT_ID is not defined");
 
 const queryClient = new QueryClient();
 
-export default function Web3Provider({ children }: PropsWithChildren<{}>) {
+export default function Web3Provider({ children }: PropsWithChildren) {
   return (
     <WagmiProvider config={web3Config}>
       <QueryClientProvider client={queryClient}>

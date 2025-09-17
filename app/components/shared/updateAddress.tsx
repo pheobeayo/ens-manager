@@ -137,19 +137,24 @@ export const UpdateAddress: React.FC<UpdateAddressProps> = ({
         });
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) { // Fixed: properly typed error
       console.error('Update error:', error);
       setUpdating(false);
       
-      // Handle different error types
-      if (error.code === 4001) {
+      // Handle different error types with proper type checking
+      if (error && typeof error === 'object' && 'code' in error && error.code === 4001) {
         onError?.('Transaction rejected by user');
-      } else if (error.message?.includes('Not the owner')) {
-        onError?.('You are not the owner of this name');
-      } else if (error.message?.includes('Name does not exist')) {
-        onError?.('Name does not exist');
-      } else if (error.message?.includes('insufficient funds')) {
-        onError?.('Insufficient funds for transaction');
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        const message = String(error.message);
+        if (message.includes('Not the owner')) {
+          onError?.('You are not the owner of this name');
+        } else if (message.includes('Name does not exist')) {
+          onError?.('Name does not exist');
+        } else if (message.includes('insufficient funds')) {
+          onError?.('Insufficient funds for transaction');
+        } else {
+          onError?.('Address update failed. Please try again.');
+        }
       } else {
         onError?.('Address update failed. Please try again.');
       }
@@ -270,7 +275,7 @@ export const UpdateAddress: React.FC<UpdateAddressProps> = ({
             <div className="text-blue-200">
               <p className="font-medium mb-1">Address Update</p>
               <p className="text-sm">
-                This will change where "{name}" resolves to. The new address will be used 
+                This will change where &quot;{name}&quot; resolves to. The new address will be used 
                 when someone looks up this name. This does not affect ownership.
               </p>
             </div>

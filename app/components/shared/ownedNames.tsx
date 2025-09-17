@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Contract } from 'ethers';
 import { useAccount } from 'wagmi';
+import Image from 'next/image';
 import { truncateAddr } from '@/utils/utils';
 
 interface OwnedNamesDisplayProps {
@@ -31,39 +32,7 @@ export const OwnedNamesDisplay: React.FC<OwnedNamesDisplayProps> = ({
   const [searchAddress, setSearchAddress] = useState('');
   const [currentSearchAddress, setCurrentSearchAddress] = useState('');
 
-  // Load names for current user on component mount
-  useEffect(() => {
-    if (address && contract) {
-      loadNamesForAddress(address);
-    }
-  }, [address, contract]);
-
-  const loadNamesForAddress = async (targetAddress: string) => {
-    if (!contract || !targetAddress) return;
-
-    try {
-      setLoading(true);
-      setCurrentSearchAddress(targetAddress);
-      
-      const names = await contract.getNamesOwnedBy(targetAddress);
-      setOwnedNames(names);
-      
-      // Load details for each name
-      if (names.length > 0) {
-        await loadNameDetails(names);
-      } else {
-        setNameDetails([]);
-      }
-      
-      setLoading(false);
-    } catch (error: any) {
-      console.error('Error loading owned names:', error);
-      setLoading(false);
-      onError?.('Failed to load owned names');
-    }
-  };
-
-  const loadNameDetails = async (names: string[]) => {
+  const loadNameDetails = useCallback(async (names: string[]) => {
     if (!contract) return;
 
     try {
@@ -101,7 +70,40 @@ export const OwnedNamesDisplay: React.FC<OwnedNamesDisplayProps> = ({
       setLoadingDetails(false);
       onError?.('Failed to load name details');
     }
-  };
+  }, [contract, onError]);
+
+  const loadNamesForAddress = useCallback(async (targetAddress: string) => {
+    if (!contract || !targetAddress) return;
+
+    try {
+      setLoading(true);
+      setCurrentSearchAddress(targetAddress);
+      
+      const names = await contract.getNamesOwnedBy(targetAddress);
+      setOwnedNames(names);
+      
+      // Load details for each name
+      if (names.length > 0) {
+        await loadNameDetails(names);
+      } else {
+        setNameDetails([]);
+      }
+      
+      setLoading(false);
+    } catch (error: unknown) {
+      console.error('Error loading owned names:', error);
+      setLoading(false);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      onError?.(`Failed to load owned names: ${errorMessage}`);
+    }
+  }, [contract, loadNameDetails, onError]);
+
+  // Load names for current user on component mount
+  useEffect(() => {
+    if (address && contract) {
+      loadNamesForAddress(address);
+    }
+  }, [address, contract, loadNamesForAddress]);
 
   const handleSearch = () => {
     if (!searchAddress.trim()) {
@@ -130,6 +132,10 @@ export const OwnedNamesDisplay: React.FC<OwnedNamesDisplayProps> = ({
       setSearchAddress(address);
       loadNamesForAddress(address);
     }
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik0zMiAyOEMyNi40NzcgMjggMjIgMjMuNTIzIDIyIDE4UzI2LjQ3NyA4IDMyIDhTNDIgMTIuNDc3IDQyIDE4UzM3LjUyMyAyOCAzMiAyOFpNMzIgMzJDNDEuMzMzIDMyIDQ5IDM5LjY2NyA0OSA0OUM0OSA1MS4yMDkgNDcuMjA5IDUzIDQ1IDUzSDE5QzE2Ljc5MSA1MyAxNSA1MS4yMDkgMTUgNDlDMTUgMzkuNjY3IDIyLjY2NyAzMiAzMiAzMloiIGZpbGw9IiM2QjczODAiLz4KPC9zdmc+';
   };
 
   return (
@@ -215,15 +221,15 @@ export const OwnedNamesDisplay: React.FC<OwnedNamesDisplayProps> = ({
               >
                 <div className="flex items-start gap-4">
                   {/* Profile Image */}
-                  <div className="w-16 h-16 rounded-lg bg-gray-700 flex-shrink-0 overflow-hidden">
+                  <div className="w-16 h-16 rounded-lg bg-gray-700 flex-shrink-0 overflow-hidden relative">
                     {nameDetail.imageUrl ? (
-                      <img
+                      <Image
                         src={nameDetail.imageUrl}
                         alt={`${nameDetail.name} profile`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik0zMiAyOEMyNi40NzcgMjggMjIgMjMuNTIzIDIyIDE4UzI2LjQ3NyA4IDMyIDhTNDIgMTIuNDc3IDQyIDE4UzM3LjUyMyAyOCAzMiAyOFpNMzIgMzJDNDEuMzMzIDMyIDQ5IDM5LjY2NyA0OSA0OUM0OSA1MS4yMDkgNDcuMjA5IDUzIDQ1IDUzSDE5QzE2Ljc5MSA1MyAxNSA1MS4yMDkgMTUgNDlDMTUgMzkuNjY3IDIyLjY2NyAzMiAzMiAzMloiIGZpbGw9IiM2QjczODAiLz4KPC9zdmc+';
-                        }}
+                        fill
+                        className="object-cover"
+                        onError={handleImageError}
+                        sizes="64px"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
